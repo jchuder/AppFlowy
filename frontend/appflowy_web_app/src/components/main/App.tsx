@@ -1,6 +1,7 @@
 import { AUTH_CALLBACK_PATH } from '@/application/session/sign_in';
 import { AuthLayout } from '@/components/app';
 import NotFound from '@/components/error/NotFound';
+import RecordNotFound from '@/components/error/RecordNotFound';
 import LoginAuth from '@/components/login/LoginAuth';
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
 import AfterPaymentPage from '@/pages/AfterPaymentPage';
@@ -11,7 +12,6 @@ import PublishPage from '@/pages/PublishPage';
 import TrashPage from '@/pages/TrashPage';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import withAppWrapper from '@/components/main/withAppWrapper';
-import emptyImageSrc from '@/assets/images/empty.png';
 
 import '@/styles/app.scss';
 
@@ -27,13 +27,12 @@ const AppMain = withAppWrapper(() => {
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
       <Route path="/" element={<Navigate to="/app" replace />} />
       <Route path={'/app'} element={<AuthLayout />}>
-        <Route index element={<div className={'flex h-full w-full items-center justify-center'}>
-          <img src={emptyImageSrc} alt={'AppFlowy'} />
-        </div>}
+        <Route
+          index element={<RecordNotFound noContent />}
         />
+        <Route path={':workspaceId'} element={<AppPage />} />
         <Route path={':workspaceId/:viewId'} element={<AppPage />} />
         <Route path={'trash'} element={<TrashPage />} />
-
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

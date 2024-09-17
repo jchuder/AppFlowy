@@ -1,3 +1,4 @@
+import { UIVariant } from '@/application/types';
 import { OutlineDrawer } from '@/components/_shared/outline';
 import Outline from '@/components/_shared/outline/Outline';
 import { AppContext, useAppOutline, useAppViewId } from '@/components/app/app.hooks';
@@ -7,6 +8,7 @@ import { Favorite } from '@/components/app/favorite';
 import { useTranslation } from 'react-i18next';
 import Trash from 'src/components/app/trash/Trash';
 import { ReactComponent as TemplateIcon } from '@/assets/template.svg';
+import Workspaces from 'src/components/app/workspaces/Workspaces';
 
 interface SideBarProps {
   drawerWidth: number;
@@ -22,6 +24,7 @@ function SideBar ({
   onResizeDrawerWidth,
 }: SideBarProps) {
   const outline = useAppOutline();
+
   const { t } = useTranslation();
   const viewId = useAppViewId();
   const navigateToView = useContext(AppContext)?.toView;
@@ -32,11 +35,12 @@ function SideBar ({
       width={drawerWidth}
       open={drawerOpened}
       onClose={() => toggleOpenDrawer(false)}
+      header={<Workspaces />}
     >
       <div className={'flex w-full flex-1 flex-col'}>
         <Favorite />
         <Outline
-          variant={'app'}
+          variant={UIVariant.App}
           navigateToView={navigateToView}
           selectedViewId={viewId}
           width={drawerWidth}

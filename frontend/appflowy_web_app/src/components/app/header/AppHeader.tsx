@@ -1,14 +1,17 @@
+import { UIVariant } from '@/application/types';
 import { Breadcrumb } from '@/components/_shared/breadcrumb';
 import MoreActions from '@/components/_shared/more-actions/MoreActions';
 import { OutlinePopover } from '@/components/_shared/outline';
 import { useOutlinePopover } from '@/components/_shared/outline/outline.hooks';
-import { findAncestors } from '@/components/_shared/outline/utils';
 import BreadcrumbSkeleton from '@/components/_shared/skeleton/BreadcrumbSkeleton';
-import { useAppHandlers, useAppOutline, useAppViewId } from '@/components/app/app.hooks';
-import { IconButton } from '@mui/material';
+import { useAppHandlers, useBreadcrumb } from '@/components/app/app.hooks';
+import { openOrDownload } from '@/utils/open_schema';
+import { Divider, IconButton, Tooltip } from '@mui/material';
 import { ReactComponent as SideOutlined } from '@/assets/side_outlined.svg';
+import { ReactComponent as Logo } from '@/assets/logo.svg';
 
 import React, { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Recent from 'src/components/app/recent/Recent';
 import ShareButton from 'src/components/app/share/ShareButton';
 
@@ -29,16 +32,10 @@ export function AppHeader ({
   } = useOutlinePopover({
     onOpenDrawer, openDrawer, onCloseDrawer,
   });
-
-  const outline = useAppOutline();
-  const viewId = useAppViewId();
+  const { t } = useTranslation();
   const isTrash = window.location.pathname === '/app/trash';
 
-  const crumbs = useMemo(() => {
-    if (!outline || !viewId) return [];
-
-    return findAncestors(outline, viewId) || [];
-  }, [outline, viewId]);
+  const crumbs = useBreadcrumb();
 
   const displayMenuButton = !openDrawer && window.innerWidth >= 480;
 
@@ -83,17 +80,27 @@ export function AppHeader ({
           </OutlinePopover>
         )}
         <div className={'h-full flex-1 overflow-hidden'}>
-          {isTrash ? null :
-            !crumbs.length ? <div className={'h-[48px] flex items-center'}><BreadcrumbSkeleton /></div> :
+          {isTrash || crumbs && crumbs.length === 0 ? null :
+            !crumbs ? <div className={'h-[48px] flex items-center'}><BreadcrumbSkeleton /></div> :
               <Breadcrumb
                 toView={toView}
-                variant={'app'}
+                variant={UIVariant.App}
                 crumbs={crumbs}
               />}
         </div>
         <div className={'flex items-center gap-2'}>
           <MoreActions />
           <ShareButton />
+          <Divider
+            orientation={'vertical'}
+            className={'mx-2'}
+            flexItem
+          />
+          <Tooltip title={t('publish.downloadApp')}>
+            <button onClick={() => openOrDownload()}>
+              <Logo className={'h-6 w-6'} />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

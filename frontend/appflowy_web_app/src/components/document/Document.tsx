@@ -1,6 +1,7 @@
-import { GetViewRowsMap, LoadView, LoadViewMeta, YDoc } from '@/application/types';
+import { CreateRowDoc, LoadView, LoadViewMeta, YDoc, YjsEditorKey } from '@/application/types';
 import DocumentSkeleton from '@/components/_shared/skeleton/DocumentSkeleton';
 import { Editor } from '@/components/editor';
+import { EditorVariant } from '@/components/editor/EditorContext';
 import React, { Suspense, useCallback } from 'react';
 import ViewMetaPreview, { ViewMetaProps } from '@/components/view-meta/ViewMetaPreview';
 import { useSearchParams } from 'react-router-dom';
@@ -10,9 +11,10 @@ export interface DocumentProps {
   navigateToView?: (viewId: string) => Promise<void>;
   loadViewMeta?: LoadViewMeta;
   loadView?: LoadView;
-  getViewRowsMap?: GetViewRowsMap;
+  createRowDoc?: CreateRowDoc;
   viewMeta: ViewMetaProps;
   isTemplateThumb?: boolean;
+  variant?: EditorVariant;
 }
 
 export const Document = ({
@@ -20,9 +22,10 @@ export const Document = ({
   loadView,
   navigateToView,
   loadViewMeta,
-  getViewRowsMap,
+  createRowDoc,
   viewMeta,
   isTemplateThumb,
+  variant,
 }: DocumentProps) => {
   const [search, setSearch] = useSearchParams();
   const blockId = search.get('blockId') || undefined;
@@ -33,11 +36,15 @@ export const Document = ({
       return prev;
     });
   }, [setSearch]);
+  const document = doc?.getMap(YjsEditorKey.data_section)?.get(YjsEditorKey.document);
+
+  if (!document) return null;
 
   return (
-    <div style={{
-      minHeight: `calc(100vh - 48px)`,
-    }} className={'mb-16 flex h-full w-full flex-col items-center'}
+    <div
+      style={{
+        minHeight: `calc(100vh - 48px)`,
+      }} className={'mb-16 flex h-full w-full flex-col items-center'}
     >
       <ViewMetaPreview {...viewMeta} />
       <Suspense fallback={<DocumentSkeleton />}>
@@ -46,12 +53,13 @@ export const Document = ({
             loadView={loadView}
             loadViewMeta={loadViewMeta}
             navigateToView={navigateToView}
-            getViewRowsMap={getViewRowsMap}
+            createRowDoc={createRowDoc}
             readSummary={isTemplateThumb}
             doc={doc}
             readOnly={true}
             jumpBlockId={blockId}
             onJumpedBlockId={onJumpedBlockId}
+            variant={variant}
           />
         </div>
       </Suspense>

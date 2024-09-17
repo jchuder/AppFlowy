@@ -1,7 +1,9 @@
+import { db } from '@/application/db';
 import {
-  GetViewRowsMap,
+  AppendBreadcrumb,
+  CreateRowDoc,
   LoadView,
-  LoadViewMeta,
+  LoadViewMeta, RowId,
   YDatabase,
   YDoc,
   YjsDatabaseKey,
@@ -10,29 +12,32 @@ import {
 import ComponentLoading from '@/components/_shared/progress/ComponentLoading';
 import DatabaseRow from '@/components/database/DatabaseRow';
 import DatabaseViews from '@/components/database/DatabaseViews';
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
-import * as Y from 'yjs';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { debounce } from 'lodash-es';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { DatabaseContextProvider } from './DatabaseContext';
 
 export interface Database2Props {
   doc: YDoc;
-  getViewRowsMap?: GetViewRowsMap;
+  createRowDoc?: CreateRowDoc;
   loadView?: LoadView;
   navigateToView?: (viewId: string) => Promise<void>;
   loadViewMeta?: LoadViewMeta;
   viewId: string;
   iidName: string;
   rowId?: string;
+  appendBreadcrumb?: AppendBreadcrumb;
   onChangeView: (viewId: string) => void;
   onOpenRow?: (rowId: string) => void;
   visibleViewIds: string[];
   iidIndex: string;
   hideConditions?: boolean;
+  variant?: 'publish' | 'app';
 }
 
 function Database ({
   doc,
-  getViewRowsMap,
+  createRowDoc,
   navigateToView,
   loadViewMeta,
   loadView,
@@ -44,22 +49,51 @@ function Database ({
   onChangeView,
   onOpenRow,
   hideConditions,
+  appendBreadcrumb,
+  variant = 'app',
 }: Database2Props) {
-  const database = doc.getMap(YjsEditorKey.data_section).get(YjsEditorKey.database) as YDatabase;
+  const database = doc.getMap(YjsEditorKey.data_section)?.get(YjsEditorKey.database) as YDatabase;
 
   const view = database.get(YjsDatabaseKey.views).get(iidIndex);
 
-  const rowOrders = view.get(YjsDatabaseKey.row_orders);
-  const [rowDocMap, setRowDocMap] = useState<Y.Map<YDoc> | null>(null);
+  const rowOrders = view?.get(YjsDatabaseKey.row_orders);
+  const [rowIds, setRowIds] = useState<RowId[]>([]);
+  const [rowDocMap, setRowDocMap] = useState<Record<RowId, YDoc> | null>(null);
+  const dbRows = useLiveQuery(async () => {
+    const rows = await db.rows.bulkGet(rowIds.map(id => `${doc.guid}_rows_${id}`));
+
+    return rows;
+  }, [rowIds, variant]);
+
+  const updateRowMap = useCallback(async () => {
+    const newRowMap: Record<RowId, YDoc> = {};
+
+    if (!dbRows || !createRowDoc) return;
+
+    for (const row of dbRows) {
+      if (!row) {
+        continue;
+      }
+
+      newRowMap[row.row_id] = await createRowDoc(row.row_key);
+    }
+
+    setRowDocMap(newRowMap);
+  }, [createRowDoc, dbRows]);
+
+  const debounceUpdateRowMap = useMemo(() => {
+    return debounce(updateRowMap, 200);
+  }, [updateRowMap]);
+
+  useEffect(() => {
+
+    void debounceUpdateRowMap();
+
+  }, [debounceUpdateRowMap]);
 
   const handleUpdateRowDocMap = useCallback(async () => {
-    if (!getViewRowsMap || !iidIndex) return;
-
-    const { rows, destroy } = await getViewRowsMap(iidIndex);
-
-    setRowDocMap(rows);
-    return destroy;
-  }, [getViewRowsMap, iidIndex]);
+    setRowIds(rowOrders?.toJSON().map(({ id }: { id: string }) => id) || []);
+  }, [rowOrders]);
 
   useEffect(() => {
     void handleUpdateRowDocMap();
@@ -88,10 +122,10 @@ function Database ({
           loadView={loadView}
           navigateToView={navigateToView}
           loadViewMeta={loadViewMeta}
-          getViewRowsMap={getViewRowsMap}
+          createRowDoc={createRowDoc}
         >
           {rowId ? (
-            <DatabaseRow rowId={rowId} />
+            <DatabaseRow appendBreadcrumb={appendBreadcrumb} rowId={rowId} />
           ) : (
             <div className="appflowy-database relative flex w-full flex-1 select-text flex-col overflow-y-hidden">
               <DatabaseViews

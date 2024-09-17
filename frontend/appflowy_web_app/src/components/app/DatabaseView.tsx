@@ -1,4 +1,12 @@
-import { GetViewRowsMap, LoadView, LoadViewMeta, YDoc } from '@/application/types';
+import {
+  AppendBreadcrumb,
+  CreateRowDoc,
+  LoadView,
+  LoadViewMeta,
+  YDatabase,
+  YDoc,
+  YjsEditorKey,
+} from '@/application/types';
 import { findView } from '@/components/_shared/outline/utils';
 import ComponentLoading from '@/components/_shared/progress/ComponentLoading';
 import { useAppOutline } from '@/components/app/app.hooks';
@@ -12,9 +20,10 @@ function DatabaseView ({ viewMeta, ...props }: {
   doc: YDoc;
   navigateToView?: (viewId: string) => Promise<void>;
   loadViewMeta?: LoadViewMeta;
-  getViewRowsMap?: GetViewRowsMap;
+  createRowDoc?: CreateRowDoc;
   loadView?: LoadView;
   viewMeta: ViewMetaProps;
+  appendBreadcrumb?: AppendBreadcrumb;
 }) {
   const [search, setSearch] = useSearchParams();
   const outline = useAppOutline();
@@ -24,7 +33,10 @@ function DatabaseView ({ viewMeta, ...props }: {
     return findView(outline || [], iidIndex);
   }, [outline, iidIndex]);
 
-  const visibleViewIds = useMemo(() => view?.children?.map(v => v.view_id) || [], [view]);
+  const visibleViewIds = useMemo(() => {
+    if (!view) return [];
+    return [view.view_id, ...(view.children?.map(v => v.view_id) || [])];
+  }, [view]);
 
   const viewId = useMemo(() => {
     return search.get('v') || iidIndex;
@@ -51,8 +63,10 @@ function DatabaseView ({ viewMeta, ...props }: {
   );
 
   const rowId = search.get('r') || undefined;
+  const doc = props.doc;
+  const database = doc?.getMap(YjsEditorKey.data_section)?.get(YjsEditorKey.database) as YDatabase;
 
-  if (!viewId) return null;
+  if (!viewId || !doc || !database) return null;
 
   return (
     <div
@@ -61,7 +75,8 @@ function DatabaseView ({ viewMeta, ...props }: {
       }}
       className={'relative flex h-full w-full flex-col px-6'}
     >
-      <DatabaseHeader {...viewMeta} />
+      {rowId ? null : <DatabaseHeader {...viewMeta} />}
+
       <Suspense fallback={<ComponentLoading />}>
         <Database
           iidName={viewMeta.name || ''}

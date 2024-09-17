@@ -1,4 +1,11 @@
-import { GetViewRowsMap, LoadView, LoadViewMeta, ViewLayout, YDoc } from '@/application/types';
+import {
+  CreateRowDoc,
+  LoadView,
+  LoadViewMeta,
+  ViewLayout,
+  YDoc,
+  AppendBreadcrumb,
+} from '@/application/types';
 import ViewHelmet from '@/components/_shared/helmet/ViewHelmet';
 import { findView } from '@/components/_shared/outline/utils';
 import PageSkeleton from '@/components/_shared/skeleton/PageSkeleton';
@@ -15,8 +22,9 @@ function AppPage () {
   const {
     toView,
     loadViewMeta,
-    getViewRowsMap,
+    createRowDoc,
     loadView,
+    appendBreadcrumb,
   } = useAppHandlers();
   const view = useMemo(() => {
     if (!outline || !viewId) return;
@@ -29,19 +37,23 @@ function AppPage () {
 
   const [doc, setDoc] = React.useState<YDoc | undefined>(undefined);
   const [notFound, setNotFound] = React.useState(false);
-
   const loadPageDoc = useCallback(async () => {
+
+    if (!viewId) {
+      return;
+    }
+
     setNotFound(false);
     setDoc(undefined);
-    if (!viewId) return;
     try {
       const doc = await loadView(viewId);
 
       setDoc(doc);
     } catch (e) {
-      console.error(e);
       setNotFound(true);
+      console.error(e);
     }
+
   }, [loadView, viewId]);
 
   useEffect(() => {
@@ -63,9 +75,10 @@ function AppPage () {
     doc: YDoc;
     navigateToView?: (viewId: string) => Promise<void>;
     loadViewMeta?: LoadViewMeta;
-    getViewRowsMap?: GetViewRowsMap;
+    createRowDoc?: CreateRowDoc;
     loadView?: LoadView;
     viewMeta: ViewMetaProps;
+    appendBreadcrumb?: AppendBreadcrumb;
   }>;
 
   const viewMeta: ViewMetaProps | null = useMemo(() => {
@@ -80,19 +93,21 @@ function AppPage () {
   }, [view]);
 
   const viewDom = useMemo(() => {
+
     return doc && viewMeta && View ? (
       <View
         doc={doc}
         viewMeta={viewMeta}
         navigateToView={toView}
         loadViewMeta={loadViewMeta}
-        getViewRowsMap={getViewRowsMap} loadView={loadView}
+        createRowDoc={createRowDoc}
+        appendBreadcrumb={appendBreadcrumb}
+        loadView={loadView}
       />
-    ) : (
-      <PageSkeleton hasCover={!viewMeta || !!viewMeta.cover} hasIcon={!viewMeta || !!viewMeta.icon} hasName />
-    );
-  }, [doc, View, viewMeta, toView, loadViewMeta, getViewRowsMap, loadView]);
+    ) : <PageSkeleton hasCover={!viewMeta || !!viewMeta.cover} hasIcon={!viewMeta || !!viewMeta.icon} hasName />;
+  }, [doc, viewMeta, View, toView, loadViewMeta, createRowDoc, appendBreadcrumb, loadView]);
 
+  if (!viewId) return null;
   return (
     <div className={'relative w-full h-full'}>
       {helmet}

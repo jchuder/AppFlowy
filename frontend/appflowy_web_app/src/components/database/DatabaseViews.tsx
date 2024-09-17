@@ -11,7 +11,7 @@ import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import DatabaseConditions from 'src/components/database/components/conditions/DatabaseConditions';
 
-function DatabaseViews({
+function DatabaseViews ({
   onChangeView,
   viewId,
   iidIndex,
@@ -31,7 +31,7 @@ function DatabaseViews({
   const value = useMemo(() => {
     return Math.max(
       0,
-      viewIds.findIndex((id) => id === viewId)
+      viewIds.findIndex((id) => id === viewId),
     );
   }, [viewId, viewIds]);
 

@@ -1,4 +1,12 @@
-import { GetViewRowsMap, LoadView, LoadViewMeta, YDoc } from '@/application/types';
+import {
+  AppendBreadcrumb,
+  CreateRowDoc,
+  LoadView,
+  LoadViewMeta,
+  YDatabase,
+  YDoc,
+  YjsEditorKey,
+} from '@/application/types';
 import { usePublishContext } from '@/application/publish';
 import ComponentLoading from '@/components/_shared/progress/ComponentLoading';
 import { Database } from '@/components/database';
@@ -9,11 +17,12 @@ import { useSearchParams } from 'react-router-dom';
 
 export interface DatabaseProps {
   doc: YDoc;
-  getViewRowsMap?: GetViewRowsMap;
+  createRowDoc?: CreateRowDoc;
   loadView?: LoadView;
   navigateToView?: (viewId: string) => Promise<void>;
   loadViewMeta?: LoadViewMeta;
   viewMeta: ViewMetaProps;
+  appendBreadcrumb?: AppendBreadcrumb;
 }
 
 function DatabaseView ({ viewMeta, ...props }: DatabaseProps) {
@@ -47,8 +56,10 @@ function DatabaseView ({ viewMeta, ...props }: DatabaseProps) {
   );
 
   const rowId = search.get('r') || undefined;
+  const doc = props.doc;
+  const database = doc?.getMap(YjsEditorKey.data_section)?.get(YjsEditorKey.database) as YDatabase;
 
-  if (!viewId) return null;
+  if (!viewId || !database) return null;
 
   return (
     <div
@@ -58,7 +69,8 @@ function DatabaseView ({ viewMeta, ...props }: DatabaseProps) {
       }}
       className={'relative flex h-full w-full flex-col px-6'}
     >
-      <DatabaseHeader {...viewMeta} />
+      {rowId ? null : <DatabaseHeader {...viewMeta} />}
+
       <Suspense fallback={<ComponentLoading />}>
         <Database
           iidName={viewMeta.name || ''}
@@ -68,8 +80,8 @@ function DatabaseView ({ viewMeta, ...props }: DatabaseProps) {
           rowId={rowId}
           visibleViewIds={visibleViewIds}
           onChangeView={handleChangeView}
-          onOpenRow={handleNavigateToRow}
           hideConditions={true}
+          onOpenRow={handleNavigateToRow}
         />
       </Suspense>
     </div>

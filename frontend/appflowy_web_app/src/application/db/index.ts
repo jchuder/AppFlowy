@@ -5,13 +5,14 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 import * as Y from 'yjs';
 import BaseDexie from 'dexie';
 import { viewMetasSchema, ViewMetasTable } from '@/application/db/tables/view_metas';
+import { rowSchema, rowTable } from '@/application/db/tables/rows';
 
-type DexieTables = ViewMetasTable & UserTable;
+type DexieTables = ViewMetasTable & UserTable & rowTable;
 
 export type Dexie<T = DexieTables> = BaseDexie & T;
 
 export const db = new BaseDexie(`${databasePrefix}_cache`) as Dexie;
-const schema = Object.assign({}, { ...viewMetasSchema, ...userSchema });
+const schema = Object.assign({}, { ...viewMetasSchema, ...userSchema, ...rowSchema });
 
 db.version(1).stores(schema);
 
